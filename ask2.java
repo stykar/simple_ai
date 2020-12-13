@@ -3,10 +3,11 @@ import java.util.*;
 import java.util.Random;
 
 public class ask2 {
-    private static final int M = 6;
+    private static final int M = 5;
     private static float[][] centroids;
     private static float[][] myArray;
     private static int rows = 900;
+    private static int[] belongs_to_centroid;
 
     public static void main(String[] args) throws Exception {
         Scanner sc = new Scanner(new BufferedReader(new FileReader("./s2_train.txt")));
@@ -33,17 +34,57 @@ public class ask2 {
         }
 
         System.out.println(Arrays.deepToString(centroids));
-        
-        for(int i = 0; i < 6; i++){
+
+        FileWriter fw = null;
+        BufferedWriter bw = null;
+        PrintWriter pw = null;
+
+        File f = new File("ask2out.txt");
+
+        if(f.exists()){
+            f.delete();
+        }
+
+        f.createNewFile();
+
+        for(int i = 0; i < 10; i++){
             int[] res = findBelongingCentroid();
             updateCentroids(res);
 
             System.out.println("--------");
             System.out.println("New centroids after updating");
             System.out.println(Arrays.deepToString(centroids));
-            System.out.println("Clustering error after centroid updating");
-            System.out.println(Arrays.toString(calculateClusteringError()));
+
             
+            try{
+                fw = new FileWriter(f, true);
+                bw = new BufferedWriter(fw);
+                pw = new PrintWriter(bw);
+                
+                for(int j=0; j<M; j++){
+                    pw.println(centroids[j][0] + "," + centroids[j][1]);
+                }
+
+                pw.println("-----");
+
+                for(int j=0; j<rows; j++){
+                    pw.println(myArray[j][0] + "," + myArray[j][1]);
+                }
+
+                pw.println("/////");
+
+                pw.flush();
+            }
+            finally{
+                try {
+                    fw.close();
+                } catch (IOException io) {
+                    System.out.println("IO Error");
+                }
+            } 
+
+            System.out.println("Clustering error after centroid updating");
+            System.out.println(Arrays.toString(calculateClusteringError()));  
         }
 
     }
@@ -97,7 +138,7 @@ public class ask2 {
 
     public static float[] calculateClusteringError(){
         float[] clustering_error = new float[M];
-        int[] belongs_to_centroid = new int[rows];
+        belongs_to_centroid = new int[rows];
         float[] distances = new float[rows];
 
         for (int i = 0; i < rows; i++) {
@@ -121,4 +162,35 @@ public class ask2 {
 
         return clustering_error;
     }
+
+
+    public static void CreateFile() {
+    try {
+      File myObj = new File("ask2out.txt");
+      if (myObj.createNewFile()) {
+        System.out.println("File created: " + myObj.getName());
+      } else {
+        System.out.println("File already exists.");
+      }
+    } catch (IOException e) {
+      System.out.println("An error occurred.");
+      e.printStackTrace();
+    }
+  }
+
+  public static void WriteFile() {
+    try {
+      FileWriter myWriter = new FileWriter("ask2out.txt");
+        myWriter.write(Arrays.deepToString(myArray));
+        myWriter.write("\n");
+         for(int i=0 ; i<rows;i++){
+            myWriter.write(belongs_to_centroid[i]);
+        }
+      myWriter.close();
+      System.out.println("Successfully wrote to the file.");
+    } catch (IOException e) {
+      System.out.println("An error occurred.");
+      e.printStackTrace();
+    }
+  }
 }
