@@ -162,35 +162,4 @@ public class ask2 {
 
         return clustering_error;
     }
-
-
-    public static void CreateFile() {
-    try {
-      File myObj = new File("ask2out.txt");
-      if (myObj.createNewFile()) {
-        System.out.println("File created: " + myObj.getName());
-      } else {
-        System.out.println("File already exists.");
-      }
-    } catch (IOException e) {
-      System.out.println("An error occurred.");
-      e.printStackTrace();
-    }
-  }
-
-  public static void WriteFile() {
-    try {
-      FileWriter myWriter = new FileWriter("ask2out.txt");
-        myWriter.write(Arrays.deepToString(myArray));
-        myWriter.write("\n");
-         for(int i=0 ; i<rows;i++){
-            myWriter.write(belongs_to_centroid[i]);
-        }
-      myWriter.close();
-      System.out.println("Successfully wrote to the file.");
-    } catch (IOException e) {
-      System.out.println("An error occurred.");
-      e.printStackTrace();
-    }
-  }
 }
