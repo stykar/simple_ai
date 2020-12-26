@@ -2,7 +2,7 @@ import java.io.*;
 import java.util.*;
 
 public class ask1 {
-    private static int d = 3;
+    private static int d = 2;
     private static int K = 4;
     private static int H1 = 7;
     private static int H2 = 4;
@@ -11,14 +11,12 @@ public class ask1 {
     private static int[] train_data_cat;
     private static int rows = 3000;
     private static int columns = 3;
-    private static float[][] input_weights;
-    private static float[] input_values;
     private static float[][] H1_weights;
-    private static float[] H1_values;
+    private static float[][] H1_values;
     private static float[][] H2_weights;
-    private static float[] H2_values;
+    private static float[][] H2_values;
     private static float[][] output_weights;
-    private static float[] output_values;
+    private static float[][] output_values;
     private static float learning_rate = 0.1f;
     private static float min_error = 0.001f;
     private static float previous_epoch_error;
@@ -43,29 +41,20 @@ public class ask1 {
         
         sc.close();
         initializeWeights();
-        forwardPass(d,K);
+        for(int i=0; i<3; i++){
+            forwardPass(train_data[i],d, K, i);
+        }
     }
 
     public static void initializeWeights(){
-        input_weights = new float[d][3];
-        input_values = new float[d+1];
-        input_values[0] = 1f;
         H1_weights = new float[H1][d+1];
-        H1_values = new float[H1+1];
-        H1_values[0] = 1f;
+        H1_values = new float[H1+1][rows];
         H2_weights = new float[H2][H1+1];
-        H2_values = new float[H2+1];
-        H2_values[0] = 1f;
+        H2_values = new float[H2+1][rows];
         output_weights = new float[K][H2+1];
-        output_values = new float[K];
+        output_values = new float[K][rows];
 
         Random rand = new Random();
-
-        for(int i=0; i<d; i++){
-            for(int j=0; j<3 ;j++){
-                input_weights[i][j] = rand.nextFloat() * 2 - 1;
-            }
-        }
 
         for(int i=0; i<H1; i++){
             for(int j=0; j<d+1; j++){
@@ -86,75 +75,55 @@ public class ask1 {
         }
     }
 
-    public static float calculateTotalInput(float[][] p1, float[][] p2, int num){
-        float res = 0;
-        int r = p1.length;
-        int col = p1[0].length;
-        for(int i=0; i<r ;i++){
-            for(int j=0; j<col; j++){
-                res += p1[i][j] * p2[num][j];
+    public static void forwardPass(float[] x, int d, int K, int inp){
+        float sum = 0;
+        for(int i=0; i<H1; i++){
+            for(int j=0; j<d; j++){
+                sum += x[j+1] * H1_weights[i][j];
             }
+            sum += H1_weights[0][inp];
+            H1_values[i][inp] = tanh(sum);
+            sum = 0;
         }
-        return res;
+
+        for(int i=0; i<H2; i++){
+            for(int j=0; j<H1; j++){
+                sum += H1_values[j+1][inp] * H2_weights[i][j];
+            }
+            sum += H2_weights[0][inp];
+            H2_values[i][inp] = sigmoid(sum);
+            sum = 0;
+        }
+
+        for(int i=0; i<K; i++){
+            for(int j=0; j<H2; j++){
+                sum += H2_values[j+1][inp] * output_weights[i][j];
+            }
+            sum += H2_values[0][inp];
+            output_values[i][inp] = sigmoid(sum);
+            System.out.println(output_values[i][inp]);
+            sum = 0;
+        }
+        System.out.println("--------");
+
+        //calculate total error
+        //(output kathe fora - desired output)^2
     }
 
-    public static float[] forwardPass(int d, int K){
-        for(int l=0; l<d; l++){
-            for(int i=0; i<rows ;i++){
-                for(int j=0; j<columns; j++){
-                    input_values[l] += train_data[i][j] * input_weights[l][j];
-                }
-            }
-        }
-
-        for(int l=0; l<H1; l++){
-            for(int i=0; i<d+1 ;i++){
-                H1_values[l] += input_values[i] * H1_weights[l][i];
-            }
-        }
-
-        for(int l=0; l<H2; l++){
-            for(int i=0; i<H1+1 ;i++){
-                H2_values[l] += H1_values[i] * H2_weights[l][i];
-            }
-        }
-
-        for(int l=0; l<K; l++){
-            for(int i=0; i<H2+1 ;i++){
-                output_values[l] += H2_values[i] * output_weights[l][i];
-            }
-        }
-
-        System.out.println("==input values==");
-        
-        for(int l=0; l<d; l++){
-            System.out.println(input_values[l]);
-        }
-        System.out.println("==first hidden==");
-        
-        for(int l=0; l<H1; l++){
-            System.out.println(H1_values[l]);
-        }
-        System.out.println("==second hidden==");
-
-        for(int l=0; l<H2; l++){
-            System.out.println(H2_values[l]);
-        }
-        System.out.println("==output values==");
-
-        for(int l=0; l<K; l++){
-            System.out.println(output_values[l]);
-        }
-
-        return output_values;
-    }
-
-    public double sigmoid(double x) {
-		return 1 / (1 + Math.exp(-x));
+    public static float sigmoid(float x) {
+		return (float)(1 / (1 + Math.exp(-x)));
     }
     
-    public double tanh(double x){
-        return (Math.exp(x) - Math.exp(-x))/(Math.exp(x) - Math.exp(-x));
+    public static float tanh(float x){
+        return (float)((Math.exp(x) - Math.exp(-x))/(Math.exp(x) + Math.exp(-x)));
+    }
+
+    public static float tanh2(float x){
+        return (float)((2/1+Math.exp(-2*x)-1));
+    }
+
+    public static void backprop(int d, int K){
+
     }
 }
 
