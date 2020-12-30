@@ -26,7 +26,9 @@ public class ask1 {
     private static Hashtable<Integer, float[][]> weights;
     private static Hashtable<Integer, float[][]> values;
     private static Hashtable<Integer, Integer> layerSize;
-    private static Hashtable<Integer, float[][]> weight_derivatives;
+    private static Hashtable<Integer, float[][]> weight_derivatives_out;
+    private static Hashtable<Integer, float[][]> weight_derivatives_h1;
+    private static Hashtable<Integer, float[][]> weight_derivatives_h2;
     
 
 
@@ -50,10 +52,12 @@ public class ask1 {
         initializeWeights();
         for(int i=0; i<rows; i++){
             forwardPass(train_data[i],d, K, i);
+            delta_out = new float[layerSize.get(2)];
+            delta_hidden = new float[layerSize.get(1)];
             for(int j=2; j>=0; j--){
                 backprop(j, i);
             }
-            if(i % B == 0){
+            if(i % B == 0 && i > 0){
                 gradientDescent(i - B, i);
             }
         }
@@ -84,7 +88,10 @@ public class ask1 {
         layerSize.put(1, H2);
         layerSize.put(2, K);
 
-        weight_derivatives = new Hashtable<Integer, float[][]>();
+        weight_derivatives_out = new Hashtable<Integer, float[][]>();
+        weight_derivatives_h1 = new Hashtable<Integer, float[][]>();
+        weight_derivatives_h2 = new Hashtable<Integer, float[][]>();
+
 
         Random rand = new Random();
 
@@ -148,8 +155,6 @@ public class ask1 {
 
     
     public static void backprop(int layer, int inp){
-        delta_out = new float[layerSize.get(2)];
-        delta_hidden = new float[layerSize.get(1)];
         float[][] res = new float[layerSize.get(layer)][layerSize.get(layer-1)];
         
         if(layer == 1){
@@ -157,25 +162,27 @@ public class ask1 {
 
             for(int j=0; j<layerSize.get(layer); j++){
                 for(int k=0; k<layerSize.get(layer + 1) ;k++){
-                    sum += delta_out[k] * weights.get(k)[inp][j];
+                    sum += delta_out[k] * weights.get(layer + 1)[k][j];
                 }
                 delta_hidden[j] = sum * sigmoid(values.get(layer)[inp][j]) * (1-sigmoid(values.get(layer)[inp][j]));
                 for(int i=0; i<layerSize.get(layer-1); i++){
-                    res[j][i] = delta_hidden[j]*values.get(layer-1)[inp][i];
+                    res[j][i] = delta_hidden[j] * values.get(layer-1)[inp][i];
                 }
             }
+            weight_derivatives_h2.put(inp, res);
         }
         else if(layer == 0){
             float sum = 0f;
 
             for(int j=0; j<layerSize.get(layer + 1); j++){
                 for(int k=0; k<layer+1 ; k++){
-                    sum += values.get(k)[inp][j] * weights.get(k)[inp][j];
+                    sum += values.get(k)[inp][j] * weights.get(layer + 1)[k][j];
                 }
-                for(int i=0; i<layerSize.get(layer-1); i++){
+                for(int i=0; i<d+1; i++){
                     res[j][i] = (1 - tanh(values.get(layer)[inp][j]) * tanh(values.get(layer)[inp][j])) * sum * values.get(layer-1)[inp][i];
                 }
             }
+            weight_derivatives_h1.put(inp, res);
         }
         else if(layer == 2){
             //Loss for each input (output layer)
@@ -202,18 +209,30 @@ public class ask1 {
                     }
                 }
             }
+            weight_derivatives_out.put(inp, res);
         }
-        weight_derivatives.put(layer, res);
-
-        
     }
 
     public static void gradientDescent(int from, int to){
-        for(int i=0; i<3; i++){
-            for(int j=0; j<layerSize.get(i); j++){
+        //System.out.println(Arrays.deepToString(weight_derivatives.get(0)));
+        //System.out.println(Arrays.deepToString(weight_derivatives.get(1)));
+        //System.out.println(Arrays.deepToString(weight_derivatives.get(2)));
+        for(int i=0; i<3; i++){ //gia kathe layer
+            for(int j=0; j<layerSize.get(i); j++){ //gia kathe neurwna sto layer
+                float sum = 0f;
                 for(int k=from; k<to; k++){
-                    weights.get(i)[k][j] = weights.get(i)[k][j] - learning_rate * weight_derivatives.get(i)[k][j];
+                    if(i==1){
+                        sum += weight_derivatives_h1.get(k)[i][j];
+                    }
+                    else if(i==2){
+                        sum += weight_derivatives_h2.get(k)[i][j];
+                    }
+                    else if(i==3){
+                        sum += weight_derivatives_out.get(k)[i][j];
+                    }
                 }
+                sum /= B;
+                weights.get(i)[j][] = weights.get(i)[j][] - learning_rate * sum;
             }
         }
     }
