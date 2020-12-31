@@ -64,8 +64,10 @@ public class ask1 {
                 }
             }
             //System.out.println(Arrays.deepToString(weights.get(1))+"\n");
-            calculateTotalError();
+            calculateTotalError(ep);
         }
+
+        testNetwork();
         /*
         System.out.println("~~~~~~~~~~~~~~");
         for(int j=1; j<3; j++){
@@ -264,7 +266,7 @@ public class ask1 {
         }
     }
 
-    public static void calculateTotalError(){
+    public static void calculateTotalError(int epoch){
         float totalErr = 0f;
         int desired;
         for(int i=0; i<rows; i++){
@@ -278,9 +280,79 @@ public class ask1 {
                 totalErr += ((sigmoid(values.get(2)[i][j]) - desired) * (sigmoid(values.get(2)[i][j]) - desired)) / 2 ;
             }
         }
-        System.out.println(totalErr);
+        System.out.println("epoch "+epoch+" error: "+totalErr);
     }
-   
+
+    public static void testNetwork() throws Exception{
+        Scanner sc2 = new Scanner(new BufferedReader(new FileReader("./s1_test.txt")));
+        float[][] test_data = new float[rows][columns];
+        int[] test_data_cat = new int[rows];
+
+        Hashtable<Integer, float[][]> test_values = new Hashtable<Integer, float[][]>();
+        test_values.put(-1, train_data);
+        test_values.put(0, H1_values);
+        test_values.put(1, H2_values);
+        test_values.put(2, output_values);
+
+        while (sc2.hasNextLine()) {
+            for (int i = 0; i < test_data.length; i++) {
+                String[] line = sc2.nextLine().split(" ");
+                test_data[i][0] = 1;
+                for (int j = 1; j < 3; j++) {
+                    test_data[i][j] = Float.parseFloat(line[j-1]);
+                }
+                test_data_cat[i] = Integer.parseInt((line[2].substring(line[2].length() - 1)));
+            }
+        }
+        sc2.close();
+
+        for(int inp=0; inp<rows; inp++){
+            float sum = 0;
+            float[] x = test_data[inp];
+
+            for(int i=0; i<H1; i++){
+                for(int j=0; j<d; j++){
+                    sum += x[j+1] * weights.get(0)[i][j];
+                }
+                sum += weights.get(0)[i][0];
+                test_values.get(0)[inp][i] = sum;
+                sum = 0;
+            }
+
+            for(int i=0; i<H2; i++){
+                for(int j=0; j<H1; j++){
+                    sum += test_values.get(0)[inp][j+1] * weights.get(1)[i][j];
+                }
+                sum += weights.get(1)[i][0];
+                test_values.get(1)[inp][i] = sum;
+                sum = 0;
+            }
+
+            for(int i=0; i<K; i++){
+                for(int j=0; j<H2; j++){
+                    sum += test_values.get(1)[inp][j+1] * weights.get(2)[i][j];
+                }
+                sum += weights.get(2)[i][0];
+                test_values.get(2)[inp][i] = sum;
+                sum = 0;
+            }
+        }
+        
+        float totalErr = 0f;
+        int desired;
+        for(int i=0; i<rows; i++){
+            for(int j=0; j<layerSize.get(2) - 1; j++){
+                if(test_data_cat[i] == j+1){
+                    desired = 1;
+                }
+                else{
+                    desired = 0;
+                }
+                totalErr += ((sigmoid(test_values.get(2)[i][j]) - desired) * (sigmoid(test_values.get(2)[i][j]) - desired)) / 2 ;
+            }
+        }
+        System.out.println("testing error:"+totalErr);
+    }   
 }
 
   
