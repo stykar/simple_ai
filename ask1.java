@@ -20,7 +20,7 @@ public class ask1 {
     private static float[][] output_values;
     private static float[] delta_out;
     private static float[] delta_hidden;
-    private static float learning_rate = 0.2f;
+    private static float learning_rate = 0.1f;
     private static float min_error = 0.001f;
     private static float previous_epoch_error;
 
@@ -199,25 +199,21 @@ public class ask1 {
             //Loss for each input (output layer)
             float[] loss = new float [layerSize.get(layer)];
 
-            for(int i=0; i<layerSize.get(layer) - 1; i++){
+            for(int i=0; i<layerSize.get(layer) - 1; i++){ //gia kathe  neurwna tou epipedou
                 if(train_data_cat[inp]==i+1){
                     /*1 : [1 0 0 0]
                       2 : [0 1 0 0]
                       3 : [0 0 1 0]
                       4 : [0 0 0 1]*/
-                    loss[i] = (values.get(layer)[inp][i] - 1);
-                    delta_out[i] = sigmoid(values.get(layer)[inp][i]) * (1-sigmoid(values.get(layer)[inp][i]));
-                    delta_out[i] = delta_out[i] * loss[i] * (-1);
-                    for(int j=0; j<layerSize.get(layer-1); j++){
-                        res[i][j] = delta_out[i] * sigmoid(values.get(layer-1)[inp][j]);
-                    }
+                    loss[i] = (sigmoid(values.get(layer)[inp][i]) - 1);
+                    
                 }else{
-                    loss[i] = values.get(layer)[inp][i];
-                    delta_out[i] = sigmoid(values.get(layer)[inp][i]) * (1-sigmoid(values.get(layer)[inp][i]));
-                    delta_out[i] = delta_out[i] * loss[i] * (-1);
-                    for(int j=0; j<layerSize.get(layer-1); j++){
-                        res[i][j] = delta_out[i] * sigmoid(values.get(layer-1)[inp][j]);
-                    }
+                    loss[i] = sigmoid(values.get(layer)[inp][i]);
+                }
+                delta_out[i] = sigmoid(values.get(layer)[inp][i]) * (1-sigmoid(values.get(layer)[inp][i]));
+                delta_out[i] = delta_out[i] * loss[i] * (-1);
+                for(int j=0; j<layerSize.get(layer-1); j++){
+                    res[i][j] = delta_out[i] * sigmoid(values.get(layer-1)[inp][j]);
                 }
             }
             weight_derivatives_out.put(inp, res);
@@ -284,7 +280,6 @@ public class ask1 {
         }
         System.out.println(totalErr);
     }
-
    
 }
 
