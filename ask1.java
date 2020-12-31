@@ -6,8 +6,8 @@ public class ask1 {
     private static int K = 4;
     private static int H1 = 7;
     private static int H2 = 4;
-    private static int B = 50;
-    private static int epochs = 10;
+    private static int B = 100;
+    private static int epochs = 500;
     private static float[][] train_data;
     private static int[] train_data_cat;
     private static int rows = 3000;
@@ -20,7 +20,7 @@ public class ask1 {
     private static float[][] output_values;
     private static float[] delta_out;
     private static float[] delta_hidden;
-    private static float learning_rate = 0.1f;
+    private static float learning_rate = 0.2f;
     private static float min_error = 0.001f;
     private static float previous_epoch_error;
 
@@ -63,6 +63,7 @@ public class ask1 {
                     gradientDescent(i - B, i);
                 }
             }
+            //System.out.println(Arrays.deepToString(weights.get(1))+"\n");
             calculateTotalError();
         }
         /*
@@ -74,10 +75,11 @@ public class ask1 {
 
     public static void initializeWeights(){
         H1_weights = new float[H1][d+1];
-        H1_values = new float[rows][H1+1];
         H2_weights = new float[H2][H1+1];
-        H2_values = new float[rows][H2+1];
         output_weights = new float[K][H2+1];
+
+        H1_values = new float[rows][H1+1];
+        H2_values = new float[rows][H2+1];
         output_values = new float[rows][K];
 
         weights = new Hashtable<Integer, float[][]>();
@@ -92,10 +94,10 @@ public class ask1 {
         values.put(2, output_values);
 
         layerSize = new Hashtable<Integer, Integer>();
-        layerSize.put(-1, rows);
-        layerSize.put(0, H1);
-        layerSize.put(1, H2);
-        layerSize.put(2, K);
+        layerSize.put(-1, d+1);
+        layerSize.put(0, H1+1);
+        layerSize.put(1, H2+1);
+        layerSize.put(2, K+1);
 
         weight_derivatives_out = new Hashtable<Integer, float[][]>();
         weight_derivatives_h1 = new Hashtable<Integer, float[][]>();
@@ -164,18 +166,18 @@ public class ask1 {
 
     
     public static void backprop(int layer, int inp){
-        float[][] res = new float[layerSize.get(layer)][layerSize.get(layer-1)];
+        float[][] res = new float[layerSize.get(layer) - 1][layerSize.get(layer-1)];
         
         if(layer == 1){
             float sum = 0f;
 
-            for(int j=0; j<layerSize.get(layer); j++){
-                for(int k=0; k<layerSize.get(layer + 1) ;k++){
+            for(int j=0; j<layerSize.get(layer) - 1; j++){
+                for(int k=0; k<layerSize.get(layer + 1) - 1 ;k++){
                     sum += delta_out[k] * weights.get(layer + 1)[k][j];
                 }
                 delta_hidden[j] = sum * sigmoid(values.get(layer)[inp][j]) * (1-sigmoid(values.get(layer)[inp][j]));
                 for(int i=0; i<layerSize.get(layer-1); i++){
-                    res[j][i] = delta_hidden[j] * values.get(layer-1)[inp][i];
+                    res[j][i] = delta_hidden[j] * tanh(values.get(layer-1)[inp][i]);
                 }
             }
             weight_derivatives_h2.put(inp, res);
@@ -183,11 +185,11 @@ public class ask1 {
         else if(layer == 0){
             float sum = 0f;
 
-            for(int j=0; j<layerSize.get(layer); j++){
-                for(int k=0; k<layerSize.get(layer + 1) ; k++){
+            for(int j=0; j<layerSize.get(layer) - 1; j++){
+                for(int k=0; k<layerSize.get(layer + 1) - 1 ; k++){
                     sum += delta_hidden[k] * weights.get(layer + 1)[k][j];
                 }
-                for(int i=0; i<d+1; i++){
+                for(int i=0; i<layerSize.get(layer-1); i++){
                     res[j][i] = (1 - (tanh(values.get(layer)[inp][j]) * tanh(values.get(layer)[inp][j]))) * sum * values.get(layer-1)[inp][i];
                 }
             }
@@ -197,7 +199,7 @@ public class ask1 {
             //Loss for each input (output layer)
             float[] loss = new float [layerSize.get(layer)];
 
-            for(int i=0; i<layerSize.get(layer); i++){
+            for(int i=0; i<layerSize.get(layer) - 1; i++){
                 if(train_data_cat[inp]==i+1){
                     /*1 : [1 0 0 0]
                       2 : [0 1 0 0]
@@ -207,14 +209,14 @@ public class ask1 {
                     delta_out[i] = sigmoid(values.get(layer)[inp][i]) * (1-sigmoid(values.get(layer)[inp][i]));
                     delta_out[i] = delta_out[i] * loss[i] * (-1);
                     for(int j=0; j<layerSize.get(layer-1); j++){
-                        res[i][j] = delta_out[i] * values.get(layer-1)[inp][j];
+                        res[i][j] = delta_out[i] * sigmoid(values.get(layer-1)[inp][j]);
                     }
                 }else{
                     loss[i] = values.get(layer)[inp][i];
                     delta_out[i] = sigmoid(values.get(layer)[inp][i]) * (1-sigmoid(values.get(layer)[inp][i]));
                     delta_out[i] = delta_out[i] * loss[i] * (-1);
                     for(int j=0; j<layerSize.get(layer-1); j++){
-                        res[i][j] = delta_out[i] * values.get(layer-1)[inp][j];
+                        res[i][j] = delta_out[i] * sigmoid(values.get(layer-1)[inp][j]);
                     }
                 }
             }
@@ -227,31 +229,39 @@ public class ask1 {
         //System.out.println(Arrays.deepToString(weight_derivatives_h2.get(0)));
         //System.out.println(Arrays.deepToString(weight_derivatives.get(2)));
         for(int i=0; i<3; i++){ //gia kathe layer
-            for(int j=0; j<layerSize.get(i); j++){ //gia kathe neurwna sto layer
-                float sum = 0f;
-                for(int k=from; k<to; k++){
-                    if(i==1){
+            float[][] sum = new float[layerSize.get(i) - 1][layerSize.get(i - 1)];
+            for(int j=0; j<layerSize.get(i) - 1; j++){ //gia kathe neurwna sto layer
+                for(int k=from; k<to; k++){ //gia kathe eisodo tou batch
+                    if(i==0){
                         //System.out.println("i:"+i+" j:"+j+" k:"+k);
-                        sum += weight_derivatives_h1.get(k)[i][j];
+                        //System.out.println(weight_derivatives_h1.get(k).length);
+                        //System.out.println(weight_derivatives_h1.get(k)[i].length+"\n");
+                        for(int l=0; l<layerSize.get(i - 1); l++){
+                            sum[j][l] += weight_derivatives_h1.get(k)[j][l];
+                        }
+                        
+                    }
+                    else if(i==1){
+                        for(int l=0; l<layerSize.get(i - 1); l++){
+                            sum[j][l] += weight_derivatives_h2.get(k)[j][l];
+                        }
                     }
                     else if(i==2){
-                        sum += weight_derivatives_h2.get(k)[i][j];
-                    }
-                    else if(i==3){
-                        sum += weight_derivatives_out.get(k)[i][j];
+                        for(int l=0; l<layerSize.get(i - 1); l++){
+                            sum[j][l] += weight_derivatives_out.get(k)[j][l];
+                        }
                     }
                 }
-                sum /= B;
                 if(i == 0){
-                    for(int k=0; k<d; k++){
+                    for(int k=0; k<d + 1; k++){
                         //System.out.println("i:"+i+" j:"+j+" k:"+k);
-                        weights.get(i)[j][k] = weights.get(i)[j][k] - (learning_rate * sum);
+                        weights.get(i)[j][k] = weights.get(i)[j][k] - (learning_rate * sum[j][k]/B);
                     } 
                 }
                 else{
                     for(int k=0; k<layerSize.get(i-1); k++){
                         //System.out.println("i:"+i+" j:"+j+" k:"+k);
-                        weights.get(i)[j][k] = weights.get(i)[j][k] - (learning_rate * sum);
+                        weights.get(i)[j][k] = weights.get(i)[j][k] - (learning_rate * sum[j][k]/B);
                     }
                 }
             }
@@ -262,14 +272,14 @@ public class ask1 {
         float totalErr = 0f;
         int desired;
         for(int i=0; i<rows; i++){
-            for(int j=0; j<layerSize.get(2); j++){
-                if(train_data_cat[i] == j){
+            for(int j=0; j<layerSize.get(2) - 1; j++){
+                if(train_data_cat[i] == j+1){
                     desired = 1;
                 }
                 else{
                     desired = 0;
                 }
-                totalErr += (values.get(2)[i][j] - desired) * (values.get(2)[i][j] - desired);
+                totalErr += ((sigmoid(values.get(2)[i][j]) - desired) * (sigmoid(values.get(2)[i][j]) - desired)) / 2 ;
             }
         }
         System.out.println(totalErr);
