@@ -51,6 +51,8 @@ public class ask1 {
         
         sc.close();
         initializeWeights();
+        
+        float current_error = 0f;
         for(int ep=0; ep<epochs; ep++){
             for(int i=0; i<rows; i++){
                 forwardPass(train_data[i],d, K, i);
@@ -64,7 +66,13 @@ public class ask1 {
                 }
             }
             //System.out.println(Arrays.deepToString(weights.get(1))+"\n");
-            calculateTotalError(ep);
+            current_error = calculateTotalError(ep);
+            if(ep >= 500){
+                if(current_error - previous_epoch_error < min_error){
+                    System.exit(0);
+                }
+            }
+            previous_epoch_error = current_error;
         }
 
         testNetwork();
@@ -140,7 +148,7 @@ public class ask1 {
 
         for(int i=0; i<H2; i++){
             for(int j=0; j<H1; j++){
-                sum += values.get(0)[inp][j+1] * weights.get(1)[i][j];
+                sum += tanh(values.get(0)[inp][j+1]) * weights.get(1)[i][j];
             }
             sum += weights.get(1)[i][0];
             values.get(1)[inp][i] = sum;
@@ -149,7 +157,7 @@ public class ask1 {
 
         for(int i=0; i<K; i++){
             for(int j=0; j<H2; j++){
-                sum += values.get(1)[inp][j+1] * weights.get(2)[i][j];
+                sum += sigmoid(values.get(1)[inp][j+1]) * weights.get(2)[i][j];
             }
             sum += weights.get(2)[i][0];
             values.get(2)[inp][i] = sum;
@@ -266,7 +274,7 @@ public class ask1 {
         }
     }
 
-    public static void calculateTotalError(int epoch){
+    public static float calculateTotalError(int epoch){
         float totalErr = 0f;
         int desired;
         for(int i=0; i<rows; i++){
@@ -281,6 +289,7 @@ public class ask1 {
             }
         }
         System.out.println("epoch "+epoch+" error: "+totalErr);
+        return totalErr;
     }
 
     public static void testNetwork() throws Exception{
