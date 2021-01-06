@@ -6,7 +6,7 @@ public class ask1 {
     private static int K = 4;
     private static int H1 = 7;
     private static int H2 = 4;
-    private static int B = 100;
+    private static int B = 1;
     private static int epochs = 500;
     private static float[][] train_data;
     private static int[] train_data_cat;
@@ -21,7 +21,7 @@ public class ask1 {
     private static float[] delta_out;
     private static float[] delta_hidden;
     private static float learning_rate = 0.1f;
-    private static float min_error = 0.001f;
+    private static float min_error = 0.01f;
     private static float previous_epoch_error;
 
     private static Hashtable<Integer, float[][]> weights;
@@ -330,7 +330,7 @@ public class ask1 {
 
             for(int i=0; i<H2; i++){
                 for(int j=0; j<H1; j++){
-                    sum += test_values.get(0)[inp][j+1] * weights.get(1)[i][j];
+                    sum += tanh(test_values.get(0)[inp][j+1]) * weights.get(1)[i][j];
                 }
                 sum += weights.get(1)[i][0];
                 test_values.get(1)[inp][i] = sum;
@@ -339,7 +339,7 @@ public class ask1 {
 
             for(int i=0; i<K; i++){
                 for(int j=0; j<H2; j++){
-                    sum += test_values.get(1)[inp][j+1] * weights.get(2)[i][j];
+                    sum += sigmoid(test_values.get(1)[inp][j+1]) * weights.get(2)[i][j];
                 }
                 sum += weights.get(2)[i][0];
                 test_values.get(2)[inp][i] = sum;
@@ -347,20 +347,22 @@ public class ask1 {
             }
         }
         
-        float totalErr = 0f;
-        int desired;
+        double totalErr = 0;
+        int max;
         for(int i=0; i<rows; i++){
+            max = 0;
             for(int j=0; j<layerSize.get(2) - 1; j++){
-                if(test_data_cat[i] == j+1){
-                    desired = 1;
+                if(test_values.get(2)[i][j] > test_values.get(2)[i][max]){
+                    max = j;
                 }
-                else{
-                    desired = 0;
-                }
-                totalErr += ((sigmoid(test_values.get(2)[i][j]) - desired) * (sigmoid(test_values.get(2)[i][j]) - desired)) / 2 ;
+            }
+
+            if(test_data_cat[i] != max+1){
+                totalErr += 1;
             }
         }
-        System.out.println("testing error:"+totalErr);
+        System.out.println("Predicted % in test: "+(1 - (totalErr/rows))*100+"%");
+
     }   
 }
 
